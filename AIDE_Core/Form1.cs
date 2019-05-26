@@ -1,33 +1,44 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
-using AForge.Imaging;
+﻿using AForge.Imaging;
 using AForge.Imaging.Filters;
-using AForge;
 using AForge.Video.DirectShow;
+using System;
+using System.Drawing;
 using System.Drawing.Imaging;
-using System.Threading;
-using System.IO;
+using System.Windows.Forms;
+using System.Net.Http;
+
 
 namespace AIDE_Core
 {
     public partial class Form1 : Form
     {
+        
+
+        private bool readingFromCamera = false;
+        private bool detectedFromCamera = false;
+        private bool detectedFromSensor = false;
+
+        private int timeForTimer = 5000;
+        private int timesWithoutDetections;
+        private int timesWithoutDetectionsForShutdown = 10;
+
+        private string AIDE_ClientUrl = "http://localhost:54321/api/";
+
+        private System.Timers.Timer timer;
+
+
         private FilterInfoCollection videoDevices;
         EuclideanColorFiltering filter = new EuclideanColorFiltering();
         Color color = Color.Black;
-        GrayscaleBT709 grayscaleFilter = new GrayscaleBT709();
+        //GrayscaleBT709 grayscaleFilter = new GrayscaleBT709();
         BlobCounter blobCounter = new BlobCounter();
         int range = 120;
 
         public Form1()
         {
             InitializeComponent();
+
+            AIDE_Routine();
 
             blobCounter.MinWidth = 2;
             blobCounter.MinHeight = 2;
@@ -65,6 +76,48 @@ namespace AIDE_Core
             g2.DrawLine(pen1, b.Width, b.Height / 2, 0, b.Height / 2);
         }
 
+        private void AIDE_Routine()
+        {
+            timesWithoutDetections = 0;
+            timer = new System.Timers.Timer(timeForTimer);
+            timer.Elapsed += CheckWhatsUp;
+            timer.AutoReset = true;
+            timer.Enabled = true;
+
+            timer.Start();
+        }
+
+        private void CheckWhatsUp(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            if (readingFromCamera)
+            {
+                if (!(detectedFromSensor || detectedFromCamera))
+                {
+                    timesWithoutDetections++;
+                    if (timesWithoutDetections >= timesWithoutDetectionsForShutdown)
+                    {
+                        HttpClient client = new HttpClient();
+                        client.GetAsync($"{AIDE_ClientUrl}power/lock");
+                    }
+                }
+            }
+            
+                
+        }
+
+        private void stopVideo()
+        {
+            timer.Stop();
+            readingFromCamera = false;
+
+            videoSourcePlayerOriginal.SignalToStop();
+            videoSourcePlayerOriginal.WaitForStop();
+            videoSourcePlayerClone.SignalToStop();
+            videoSourcePlayerClone.WaitForStop();
+            videoSourcePlayerFiltered.SignalToStop();
+            videoSourcePlayerFiltered.WaitForStop();
+        }
+
         private void videoSourcePlayerClone_NewFrame(object sender, ref Bitmap image)
         {
             Bitmap objectsImage = null;
@@ -78,7 +131,10 @@ namespace AIDE_Core
 
             BitmapData objectsData = objectsImage.LockBits(new Rectangle(0, 0, image.Width, image.Height),
             ImageLockMode.ReadOnly, image.PixelFormat);
-            UnmanagedImage grayImage = grayscaleFilter.Apply(new UnmanagedImage(objectsData));
+
+            //UnmanagedImage grayImage = grayscaleFilter.Apply(new UnmanagedImage(objectsData));
+            UnmanagedImage grayImage = Grayscale.CommonAlgorithms.BT709.Apply(new UnmanagedImage(objectsData));
+
             objectsImage.UnlockBits(objectsData);
 
 
@@ -120,7 +176,8 @@ namespace AIDE_Core
                 ImageLockMode.ReadOnly, image.PixelFormat);
 
             // grayscaling
-            UnmanagedImage grayImage = grayscaleFilter.Apply(new UnmanagedImage(objectsData));
+            //UnmanagedImage grayImage = grayscaleFilter.Apply(new UnmanagedImage(objectsData));
+            UnmanagedImage grayImage = Grayscale.CommonAlgorithms.BT709.Apply(new UnmanagedImage(objectsData));
 
             // unlock image
             objectsImage.UnlockBits(objectsData);
@@ -131,10 +188,13 @@ namespace AIDE_Core
 
             if (rects.Length > 0)
             {
+                detectedFromCamera = true;
+
                 Rectangle objectRect = rects[0];
 
                 // draw rectangle around detected object
                 Graphics g = Graphics.FromImage(image);
+
 
                 using (Pen pen = new Pen(Color.FromArgb(160, 255, 160), 5))
                 {
@@ -142,10 +202,16 @@ namespace AIDE_Core
                 }
                 g.Dispose();
             }
+            else
+            {
+                detectedFromCamera = false;
+            }
         }
 
         private void ButtonStart_Click(object sender, EventArgs e)
         {
+            readingFromCamera = true;
+
             videoSourcePlayerOriginal.SignalToStop();
             videoSourcePlayerOriginal.WaitForStop();
             videoSourcePlayerClone.SignalToStop();
@@ -154,8 +220,8 @@ namespace AIDE_Core
             videoSourcePlayerFiltered.WaitForStop();
             // videoDevices = null;
             VideoCaptureDevice videoSource = new VideoCaptureDevice(videoDevices[comboBoxCameras.SelectedIndex].MonikerString);
-            videoSource.DesiredFrameSize = new Size(320, 240);
-            videoSource.DesiredFrameRate = 12;
+            //videoSource.DesiredFrameSize = new Size(320, 240);
+            //videoSource.DesiredFrameRate = 12;
 
             videoSourcePlayerOriginal.VideoSource = videoSource;
             videoSourcePlayerOriginal.Start();
@@ -168,12 +234,12 @@ namespace AIDE_Core
 
         private void ButtonDisconnect_Click(object sender, EventArgs e)
         {
-            videoSourcePlayerOriginal.SignalToStop();
-            videoSourcePlayerOriginal.WaitForStop();
-            videoSourcePlayerClone.SignalToStop();
-            videoSourcePlayerClone.WaitForStop();
-            videoSourcePlayerFiltered.SignalToStop();
-            videoSourcePlayerFiltered.WaitForStop();
+            stopVideo();
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            stopVideo();
         }
     }
 }

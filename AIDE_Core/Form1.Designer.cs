@@ -120,7 +120,7 @@
             this.Controls.Add(this.buttonStart);
             this.Name = "Form1";
             this.Text = "Form1";
-            this.Deactivate += new System.EventHandler(this.ButtonDisconnect_Click);
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.groupBoxConnection.ResumeLayout(false);
             this.ResumeLayout(false);
 

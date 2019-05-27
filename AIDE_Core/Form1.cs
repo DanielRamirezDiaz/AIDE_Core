@@ -4,9 +4,10 @@ using AForge.Video.DirectShow;
 using System;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Windows.Forms;
+using System.IO.Ports;
+using System.Linq;
 using System.Net.Http;
-
+using System.Windows.Forms;
 
 namespace AIDE_Core
 {
@@ -14,13 +15,16 @@ namespace AIDE_Core
     {
         
 
-        private bool readingFromCamera = false;
+        //private bool readingFromCamera = false;
         private bool detectedFromCamera = false;
         private bool detectedFromSensor = false;
+        //private bool keepRunning = true;
 
         private int timeForTimer = 5000;
         private int timesWithoutDetections;
         private int timesWithoutDetectionsForShutdown = 10;
+
+        private SerialPort serialPortForArduino;
 
         private string AIDE_ClientUrl = "http://localhost:54321/api/";
 
@@ -78,6 +82,31 @@ namespace AIDE_Core
 
         private void AIDE_Routine()
         {
+            SetSerial();
+
+            SetTimer();
+        }
+
+        private void SetSerial()
+        {
+            try
+            {
+                var ports = SerialPort.GetPortNames().ToList();
+                if (ports.Any())
+                {
+                    serialPortForArduino = new SerialPort(ports.FirstOrDefault(), 9600);
+                    serialPortForArduino.DataReceived += SerialPortForArduino_DataReceived;
+                    serialPortForArduino.Open();
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
+
+        private void SetTimer()
+        {
             timesWithoutDetections = 0;
             timer = new System.Timers.Timer(timeForTimer);
             timer.Elapsed += CheckWhatsUp;
@@ -87,28 +116,41 @@ namespace AIDE_Core
             timer.Start();
         }
 
-        private void CheckWhatsUp(object sender, System.Timers.ElapsedEventArgs e)
+        private void SerialPortForArduino_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
-            if (readingFromCamera)
-            {
-                if (!(detectedFromSensor || detectedFromCamera))
-                {
-                    timesWithoutDetections++;
-                    if (timesWithoutDetections >= timesWithoutDetectionsForShutdown)
-                    {
-                        HttpClient client = new HttpClient();
-                        client.GetAsync($"{AIDE_ClientUrl}power/lock");
-                    }
-                }
-            }
-            
-                
+            throw new NotImplementedException();
+            //detectedFromSensor = serialPortForArduino.ReadExisting();
         }
 
-        private void stopVideo()
+        private void CheckWhatsUp(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            if (!(detectedFromSensor || detectedFromCamera))
+            {
+                timesWithoutDetections++;
+                if (timesWithoutDetections >= timesWithoutDetectionsForShutdown)
+                {
+                    var client = new HttpClient();
+                    client.GetAsync($"{AIDE_ClientUrl}power/lock");
+                }
+            }
+            else
+                timesWithoutDetections = 0;
+        }
+
+        
+
+        private void StopEverythingBoi()
         {
             timer.Stop();
-            readingFromCamera = false;
+            try
+            {
+                serialPortForArduino.Close();
+            }
+            catch { }
+            
+
+            //keepRunning = false;
+            //readingFromCamera = false;
 
             videoSourcePlayerOriginal.SignalToStop();
             videoSourcePlayerOriginal.WaitForStop();
@@ -210,7 +252,7 @@ namespace AIDE_Core
 
         private void ButtonStart_Click(object sender, EventArgs e)
         {
-            readingFromCamera = true;
+            //readingFromCamera = true;
 
             videoSourcePlayerOriginal.SignalToStop();
             videoSourcePlayerOriginal.WaitForStop();
@@ -234,12 +276,12 @@ namespace AIDE_Core
 
         private void ButtonDisconnect_Click(object sender, EventArgs e)
         {
-            stopVideo();
+            StopEverythingBoi();
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            stopVideo();
+            StopEverythingBoi();
         }
     }
 }

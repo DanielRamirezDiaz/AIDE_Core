@@ -13,16 +13,13 @@ namespace AIDE_Core
 {
     public partial class Form1 : Form
     {
-        
-
-        //private bool readingFromCamera = false;
         private bool detectedFromCamera = false;
         private bool detectedFromSensor = false;
-        //private bool keepRunning = true;
+        private bool killOrderSent = false;
 
-        private int timeForTimer = 5000;
+        private int timeForTimer;
         private int timesWithoutDetections;
-        private int timesWithoutDetectionsForShutdown = 10;
+        private int timesWithoutDetectionsForShutdown = 2;
 
         private SerialPort serialPortForArduino;
 
@@ -34,15 +31,12 @@ namespace AIDE_Core
         private FilterInfoCollection videoDevices;
         EuclideanColorFiltering filter = new EuclideanColorFiltering();
         Color color = Color.Black;
-        //GrayscaleBT709 grayscaleFilter = new GrayscaleBT709();
         BlobCounter blobCounter = new BlobCounter();
         int range = 120;
 
         public Form1()
         {
             InitializeComponent();
-
-            AIDE_Routine();
 
             blobCounter.MinWidth = 2;
             blobCounter.MinHeight = 2;
@@ -57,16 +51,16 @@ namespace AIDE_Core
                     throw new ApplicationException();
 
                 // add all devices to combo
-                foreach (FilterInfo device in videoDevices)
-                {
-                    comboBoxCameras.Items.Add(device.Name);
-                }
+                //foreach (FilterInfo device in videoDevices)
+                //{
+                //    comboBoxCameras.Items.Add(device.Name);
+                //}
 
-                comboBoxCameras.SelectedIndex = 0;
+                //comboBoxCameras.SelectedIndex = 0;
             }
             catch (ApplicationException)
             {
-                comboBoxCameras.Items.Add("No local capture devices");
+                //comboBoxCameras.Items.Add("No local capture devices");
                 videoDevices = null;
             }
 
@@ -107,6 +101,9 @@ namespace AIDE_Core
 
         private void SetTimer()
         {
+            timesWithoutDetectionsForShutdown = (int)numericUpDownChecksForLock.Value;
+            timeForTimer = (int)numericUpDownTimeBetween.Value * 1000;
+
             timesWithoutDetections = 0;
             timer = new System.Timers.Timer(timeForTimer);
             timer.Elapsed += CheckWhatsUp;
@@ -129,25 +126,69 @@ namespace AIDE_Core
                 timesWithoutDetections++;
                 if (timesWithoutDetections >= timesWithoutDetectionsForShutdown)
                 {
-                    var client = new HttpClient();
-                    client.GetAsync($"{AIDE_ClientUrl}power/lock");
+                    if (!killOrderSent)
+                    {
+                        var client = new HttpClient();
+                        client.GetAsync($"{AIDE_ClientUrl}power/lock");
+                        killOrderSent = true;
+                    }
+                    
                 }
             }
             else
                 timesWithoutDetections = 0;
         }
 
-        
+        private void ButtonStart_Click(object sender, EventArgs e)
+        {
+            killOrderSent = false;
+            AIDE_Routine();
+
+            numericUpDownChecksForLock.Enabled = false;
+            numericUpDownTimeBetween.Enabled = false;
+
+            //readingFromCamera = true;
+
+            videoSourcePlayerOriginal.SignalToStop();
+            videoSourcePlayerOriginal.WaitForStop();
+            videoSourcePlayerClone.SignalToStop();
+            videoSourcePlayerClone.WaitForStop();
+            videoSourcePlayerFiltered.SignalToStop();
+            videoSourcePlayerFiltered.WaitForStop();
+            // videoDevices = null;
+            VideoCaptureDevice videoSource = new VideoCaptureDevice(videoDevices[0].MonikerString);
+            //videoSource.DesiredFrameSize = new Size(320, 240);
+            //videoSource.DesiredFrameRate = 12;
+
+            videoSourcePlayerOriginal.VideoSource = videoSource;
+            videoSourcePlayerOriginal.Start();
+            videoSourcePlayerClone.VideoSource = videoSource;
+            videoSourcePlayerClone.Start();
+            videoSourcePlayerFiltered.VideoSource = videoSource;
+            videoSourcePlayerFiltered.Start();
+            //groupBox1.Enabled = false;
+        }
 
         private void StopEverythingBoi()
         {
-            timer.Stop();
+            killOrderSent = false;
+            numericUpDownChecksForLock.Enabled = true;
+            numericUpDownTimeBetween.Enabled = true;
+
+            try
+            {
+                timer.Stop();
+            }
+            catch { }
+            
             try
             {
                 serialPortForArduino.Close();
             }
             catch { }
-            
+
+            numericUpDownChecksForLock.Enabled = true;
+            numericUpDownTimeBetween.Enabled = true;
 
             //keepRunning = false;
             //readingFromCamera = false;
@@ -158,6 +199,16 @@ namespace AIDE_Core
             videoSourcePlayerClone.WaitForStop();
             videoSourcePlayerFiltered.SignalToStop();
             videoSourcePlayerFiltered.WaitForStop();
+        }
+
+        private void ButtonDisconnect_Click(object sender, EventArgs e)
+        {
+            StopEverythingBoi();
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            StopEverythingBoi();
         }
 
         private void videoSourcePlayerClone_NewFrame(object sender, ref Bitmap image)
@@ -248,40 +299,6 @@ namespace AIDE_Core
             {
                 detectedFromCamera = false;
             }
-        }
-
-        private void ButtonStart_Click(object sender, EventArgs e)
-        {
-            //readingFromCamera = true;
-
-            videoSourcePlayerOriginal.SignalToStop();
-            videoSourcePlayerOriginal.WaitForStop();
-            videoSourcePlayerClone.SignalToStop();
-            videoSourcePlayerClone.WaitForStop();
-            videoSourcePlayerFiltered.SignalToStop();
-            videoSourcePlayerFiltered.WaitForStop();
-            // videoDevices = null;
-            VideoCaptureDevice videoSource = new VideoCaptureDevice(videoDevices[comboBoxCameras.SelectedIndex].MonikerString);
-            //videoSource.DesiredFrameSize = new Size(320, 240);
-            //videoSource.DesiredFrameRate = 12;
-
-            videoSourcePlayerOriginal.VideoSource = videoSource;
-            videoSourcePlayerOriginal.Start();
-            videoSourcePlayerClone.VideoSource = videoSource;
-            videoSourcePlayerClone.Start();
-            videoSourcePlayerFiltered.VideoSource = videoSource;
-            videoSourcePlayerFiltered.Start();
-            //groupBox1.Enabled = false;
-        }
-
-        private void ButtonDisconnect_Click(object sender, EventArgs e)
-        {
-            StopEverythingBoi();
-        }
-
-        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            StopEverythingBoi();
         }
     }
 }

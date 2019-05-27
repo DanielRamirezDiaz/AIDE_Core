@@ -28,46 +28,28 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.groupBoxConnection = new System.Windows.Forms.GroupBox();
             this.buttonDisconnect = new System.Windows.Forms.Button();
-            this.comboBoxCameras = new System.Windows.Forms.ComboBox();
             this.videoSourcePlayerFiltered = new AForge.Controls.VideoSourcePlayer();
             this.videoSourcePlayerClone = new AForge.Controls.VideoSourcePlayer();
             this.videoSourcePlayerOriginal = new AForge.Controls.VideoSourcePlayer();
             this.buttonStart = new System.Windows.Forms.Button();
-            this.groupBoxConnection.SuspendLayout();
+            this.numericUpDownTimeBetween = new System.Windows.Forms.NumericUpDown();
+            this.labelTimeBetweenChecks = new System.Windows.Forms.Label();
+            this.numericUpDownChecksForLock = new System.Windows.Forms.NumericUpDown();
+            this.labelChecksForLock = new System.Windows.Forms.Label();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownTimeBetween)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownChecksForLock)).BeginInit();
             this.SuspendLayout();
-            // 
-            // groupBoxConnection
-            // 
-            this.groupBoxConnection.Controls.Add(this.buttonDisconnect);
-            this.groupBoxConnection.Controls.Add(this.comboBoxCameras);
-            this.groupBoxConnection.Location = new System.Drawing.Point(13, 403);
-            this.groupBoxConnection.Name = "groupBoxConnection";
-            this.groupBoxConnection.Size = new System.Drawing.Size(190, 100);
-            this.groupBoxConnection.TabIndex = 17;
-            this.groupBoxConnection.TabStop = false;
-            this.groupBoxConnection.Text = "Connection";
             // 
             // buttonDisconnect
             // 
-            this.buttonDisconnect.Location = new System.Drawing.Point(110, 53);
+            this.buttonDisconnect.Location = new System.Drawing.Point(93, 481);
             this.buttonDisconnect.Name = "buttonDisconnect";
             this.buttonDisconnect.Size = new System.Drawing.Size(75, 23);
-            this.buttonDisconnect.TabIndex = 10;
+            this.buttonDisconnect.TabIndex = 4;
             this.buttonDisconnect.Text = "Disconnect";
             this.buttonDisconnect.UseVisualStyleBackColor = true;
             this.buttonDisconnect.Click += new System.EventHandler(this.ButtonDisconnect_Click);
-            // 
-            // comboBoxCameras
-            // 
-            this.comboBoxCameras.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.comboBoxCameras.FormattingEnabled = true;
-            this.comboBoxCameras.Location = new System.Drawing.Point(17, 26);
-            this.comboBoxCameras.Name = "comboBoxCameras";
-            this.comboBoxCameras.Size = new System.Drawing.Size(167, 21);
-            this.comboBoxCameras.TabIndex = 5;
-            this.comboBoxCameras.Visible = false;
             // 
             // videoSourcePlayerFiltered
             // 
@@ -100,20 +82,66 @@
             // 
             // buttonStart
             // 
-            this.buttonStart.Location = new System.Drawing.Point(13, 509);
+            this.buttonStart.Location = new System.Drawing.Point(12, 481);
             this.buttonStart.Name = "buttonStart";
             this.buttonStart.Size = new System.Drawing.Size(75, 23);
-            this.buttonStart.TabIndex = 13;
+            this.buttonStart.TabIndex = 3;
             this.buttonStart.Text = "Start";
             this.buttonStart.UseVisualStyleBackColor = true;
             this.buttonStart.Click += new System.EventHandler(this.ButtonStart_Click);
+            // 
+            // numericUpDownTimeBetween
+            // 
+            this.numericUpDownTimeBetween.Location = new System.Drawing.Point(12, 416);
+            this.numericUpDownTimeBetween.Name = "numericUpDownTimeBetween";
+            this.numericUpDownTimeBetween.Size = new System.Drawing.Size(75, 20);
+            this.numericUpDownTimeBetween.TabIndex = 1;
+            this.numericUpDownTimeBetween.Value = new decimal(new int[] {
+            5,
+            0,
+            0,
+            0});
+            // 
+            // labelTimeBetweenChecks
+            // 
+            this.labelTimeBetweenChecks.AutoSize = true;
+            this.labelTimeBetweenChecks.Location = new System.Drawing.Point(9, 400);
+            this.labelTimeBetweenChecks.Name = "labelTimeBetweenChecks";
+            this.labelTimeBetweenChecks.Size = new System.Drawing.Size(163, 13);
+            this.labelTimeBetweenChecks.TabIndex = 21;
+            this.labelTimeBetweenChecks.Text = "Time Between Checks (seconds)";
+            // 
+            // numericUpDownChecksForLock
+            // 
+            this.numericUpDownChecksForLock.Location = new System.Drawing.Point(12, 455);
+            this.numericUpDownChecksForLock.Name = "numericUpDownChecksForLock";
+            this.numericUpDownChecksForLock.Size = new System.Drawing.Size(75, 20);
+            this.numericUpDownChecksForLock.TabIndex = 2;
+            this.numericUpDownChecksForLock.Value = new decimal(new int[] {
+            5,
+            0,
+            0,
+            0});
+            // 
+            // labelChecksForLock
+            // 
+            this.labelChecksForLock.AutoSize = true;
+            this.labelChecksForLock.Location = new System.Drawing.Point(9, 439);
+            this.labelChecksForLock.Name = "labelChecksForLock";
+            this.labelChecksForLock.Size = new System.Drawing.Size(93, 13);
+            this.labelChecksForLock.TabIndex = 23;
+            this.labelChecksForLock.Text = "Checks Before Kill";
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1227, 556);
-            this.Controls.Add(this.groupBoxConnection);
+            this.ClientSize = new System.Drawing.Size(1227, 516);
+            this.Controls.Add(this.labelChecksForLock);
+            this.Controls.Add(this.numericUpDownChecksForLock);
+            this.Controls.Add(this.labelTimeBetweenChecks);
+            this.Controls.Add(this.numericUpDownTimeBetween);
+            this.Controls.Add(this.buttonDisconnect);
             this.Controls.Add(this.videoSourcePlayerFiltered);
             this.Controls.Add(this.videoSourcePlayerClone);
             this.Controls.Add(this.videoSourcePlayerOriginal);
@@ -121,20 +149,23 @@
             this.Name = "Form1";
             this.Text = "Form1";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
-            this.groupBoxConnection.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownTimeBetween)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownChecksForLock)).EndInit();
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
         #endregion
-
-        private System.Windows.Forms.GroupBox groupBoxConnection;
         private System.Windows.Forms.Button buttonDisconnect;
-        private System.Windows.Forms.ComboBox comboBoxCameras;
         private AForge.Controls.VideoSourcePlayer videoSourcePlayerFiltered;
         private AForge.Controls.VideoSourcePlayer videoSourcePlayerClone;
         private AForge.Controls.VideoSourcePlayer videoSourcePlayerOriginal;
         private System.Windows.Forms.Button buttonStart;
+        private System.Windows.Forms.NumericUpDown numericUpDownTimeBetween;
+        private System.Windows.Forms.Label labelTimeBetweenChecks;
+        private System.Windows.Forms.NumericUpDown numericUpDownChecksForLock;
+        private System.Windows.Forms.Label labelChecksForLock;
     }
 }
 

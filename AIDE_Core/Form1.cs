@@ -115,8 +115,9 @@ namespace AIDE_Core
 
         private void SerialPortForArduino_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
-            throw new NotImplementedException();
-            //detectedFromSensor = serialPortForArduino.ReadExisting();
+            //throw new NotImplementedException();
+            var streamString = serialPortForArduino.ReadExisting();
+            detectedFromSensor = streamString.Equals("1");
         }
 
         private void CheckWhatsUp(object sender, System.Timers.ElapsedEventArgs e)
